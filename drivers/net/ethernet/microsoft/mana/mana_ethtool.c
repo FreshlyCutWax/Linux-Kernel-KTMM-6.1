@@ -5,7 +5,7 @@
 #include <linux/etherdevice.h>
 #include <linux/ethtool.h>
 
-#include "mana.h"
+#include <net/mana/mana.h>
 
 static const struct {
 	char name[ETH_GSTRING_LEN];
@@ -13,6 +13,66 @@ static const struct {
 } mana_eth_stats[] = {
 	{"stop_queue", offsetof(struct mana_ethtool_stats, stop_queue)},
 	{"wake_queue", offsetof(struct mana_ethtool_stats, wake_queue)},
+	{"hc_rx_discards_no_wqe", offsetof(struct mana_ethtool_stats,
+					   hc_rx_discards_no_wqe)},
+	{"hc_rx_err_vport_disabled", offsetof(struct mana_ethtool_stats,
+					      hc_rx_err_vport_disabled)},
+	{"hc_rx_bytes", offsetof(struct mana_ethtool_stats, hc_rx_bytes)},
+	{"hc_rx_ucast_pkts", offsetof(struct mana_ethtool_stats,
+				      hc_rx_ucast_pkts)},
+	{"hc_rx_ucast_bytes", offsetof(struct mana_ethtool_stats,
+				       hc_rx_ucast_bytes)},
+	{"hc_rx_bcast_pkts", offsetof(struct mana_ethtool_stats,
+				      hc_rx_bcast_pkts)},
+	{"hc_rx_bcast_bytes", offsetof(struct mana_ethtool_stats,
+				       hc_rx_bcast_bytes)},
+	{"hc_rx_mcast_pkts", offsetof(struct mana_ethtool_stats,
+			hc_rx_mcast_pkts)},
+	{"hc_rx_mcast_bytes", offsetof(struct mana_ethtool_stats,
+				       hc_rx_mcast_bytes)},
+	{"hc_tx_err_gf_disabled", offsetof(struct mana_ethtool_stats,
+					   hc_tx_err_gf_disabled)},
+	{"hc_tx_err_vport_disabled", offsetof(struct mana_ethtool_stats,
+					      hc_tx_err_vport_disabled)},
+	{"hc_tx_err_inval_vportoffset_pkt",
+	 offsetof(struct mana_ethtool_stats,
+		  hc_tx_err_inval_vportoffset_pkt)},
+	{"hc_tx_err_vlan_enforcement", offsetof(struct mana_ethtool_stats,
+						hc_tx_err_vlan_enforcement)},
+	{"hc_tx_err_eth_type_enforcement",
+	 offsetof(struct mana_ethtool_stats, hc_tx_err_eth_type_enforcement)},
+	{"hc_tx_err_sa_enforcement", offsetof(struct mana_ethtool_stats,
+					      hc_tx_err_sa_enforcement)},
+	{"hc_tx_err_sqpdid_enforecement",
+	 offsetof(struct mana_ethtool_stats, hc_tx_err_sqpdid_enforecement)},
+	{"hc_tx_err_cqpdid_enforcement",
+	 offsetof(struct mana_ethtool_stats, hc_tx_err_cqpdid_enforcement)},
+	{"hc_tx_err_mtu_violation", offsetof(struct mana_ethtool_stats,
+					     hc_tx_err_mtu_violation)},
+	{"hc_tx_err_inval_oob", offsetof(struct mana_ethtool_stats,
+					 hc_tx_err_inval_oob)},
+	{"hc_tx_err_gdma", offsetof(struct mana_ethtool_stats,
+				    hc_tx_err_gdma)},
+	{"hc_tx_bytes", offsetof(struct mana_ethtool_stats, hc_tx_bytes)},
+	{"hc_tx_ucast_pkts", offsetof(struct mana_ethtool_stats,
+					hc_tx_ucast_pkts)},
+	{"hc_tx_ucast_bytes", offsetof(struct mana_ethtool_stats,
+					hc_tx_ucast_bytes)},
+	{"hc_tx_bcast_pkts", offsetof(struct mana_ethtool_stats,
+					hc_tx_bcast_pkts)},
+	{"hc_tx_bcast_bytes", offsetof(struct mana_ethtool_stats,
+					hc_tx_bcast_bytes)},
+	{"hc_tx_mcast_pkts", offsetof(struct mana_ethtool_stats,
+					hc_tx_mcast_pkts)},
+	{"hc_tx_mcast_bytes", offsetof(struct mana_ethtool_stats,
+					hc_tx_mcast_bytes)},
+	{"tx_cq_err", offsetof(struct mana_ethtool_stats, tx_cqe_err)},
+	{"tx_cqe_unknown_type", offsetof(struct mana_ethtool_stats,
+					tx_cqe_unknown_type)},
+	{"rx_coalesced_err", offsetof(struct mana_ethtool_stats,
+					rx_coalesced_err)},
+	{"rx_cqe_unknown_type", offsetof(struct mana_ethtool_stats,
+					rx_cqe_unknown_type)},
 };
 
 static int mana_get_sset_count(struct net_device *ndev, int stringset)
@@ -23,7 +83,8 @@ static int mana_get_sset_count(struct net_device *ndev, int stringset)
 	if (stringset != ETH_SS_STATS)
 		return -EINVAL;
 
-	return ARRAY_SIZE(mana_eth_stats) + num_queues * 8;
+	return ARRAY_SIZE(mana_eth_stats) + num_queues *
+				(MANA_STATS_RX_COUNT + MANA_STATS_TX_COUNT);
 }
 
 static void mana_get_strings(struct net_device *ndev, u32 stringset, u8 *data)
@@ -61,6 +122,22 @@ static void mana_get_strings(struct net_device *ndev, u32 stringset, u8 *data)
 		p += ETH_GSTRING_LEN;
 		sprintf(p, "tx_%d_xdp_xmit", i);
 		p += ETH_GSTRING_LEN;
+		sprintf(p, "tx_%d_tso_packets", i);
+		p += ETH_GSTRING_LEN;
+		sprintf(p, "tx_%d_tso_bytes", i);
+		p += ETH_GSTRING_LEN;
+		sprintf(p, "tx_%d_tso_inner_packets", i);
+		p += ETH_GSTRING_LEN;
+		sprintf(p, "tx_%d_tso_inner_bytes", i);
+		p += ETH_GSTRING_LEN;
+		sprintf(p, "tx_%d_long_pkt_fmt", i);
+		p += ETH_GSTRING_LEN;
+		sprintf(p, "tx_%d_short_pkt_fmt", i);
+		p += ETH_GSTRING_LEN;
+		sprintf(p, "tx_%d_csum_partial", i);
+		p += ETH_GSTRING_LEN;
+		sprintf(p, "tx_%d_mana_map_err", i);
+		p += ETH_GSTRING_LEN;
 	}
 }
 
@@ -78,10 +155,20 @@ static void mana_get_ethtool_stats(struct net_device *ndev,
 	u64 xdp_xmit;
 	u64 xdp_drop;
 	u64 xdp_tx;
+	u64 tso_packets;
+	u64 tso_bytes;
+	u64 tso_inner_packets;
+	u64 tso_inner_bytes;
+	u64 long_pkt_fmt;
+	u64 short_pkt_fmt;
+	u64 csum_partial;
+	u64 mana_map_err;
 	int q, i = 0;
 
 	if (!apc->port_is_up)
 		return;
+	/* we call mana function to update stats from GDMA */
+	mana_query_gf_stats(apc);
 
 	for (q = 0; q < ARRAY_SIZE(mana_eth_stats); q++)
 		data[i++] = *(u64 *)(eth_stats + mana_eth_stats[q].offset);
@@ -90,13 +177,13 @@ static void mana_get_ethtool_stats(struct net_device *ndev,
 		rx_stats = &apc->rxqs[q]->stats;
 
 		do {
-			start = u64_stats_fetch_begin_irq(&rx_stats->syncp);
+			start = u64_stats_fetch_begin(&rx_stats->syncp);
 			packets = rx_stats->packets;
 			bytes = rx_stats->bytes;
 			xdp_drop = rx_stats->xdp_drop;
 			xdp_tx = rx_stats->xdp_tx;
 			xdp_redirect = rx_stats->xdp_redirect;
-		} while (u64_stats_fetch_retry_irq(&rx_stats->syncp, start));
+		} while (u64_stats_fetch_retry(&rx_stats->syncp, start));
 
 		data[i++] = packets;
 		data[i++] = bytes;
@@ -109,15 +196,31 @@ static void mana_get_ethtool_stats(struct net_device *ndev,
 		tx_stats = &apc->tx_qp[q].txq.stats;
 
 		do {
-			start = u64_stats_fetch_begin_irq(&tx_stats->syncp);
+			start = u64_stats_fetch_begin(&tx_stats->syncp);
 			packets = tx_stats->packets;
 			bytes = tx_stats->bytes;
 			xdp_xmit = tx_stats->xdp_xmit;
-		} while (u64_stats_fetch_retry_irq(&tx_stats->syncp, start));
+			tso_packets = tx_stats->tso_packets;
+			tso_bytes = tx_stats->tso_bytes;
+			tso_inner_packets = tx_stats->tso_inner_packets;
+			tso_inner_bytes = tx_stats->tso_inner_bytes;
+			long_pkt_fmt = tx_stats->long_pkt_fmt;
+			short_pkt_fmt = tx_stats->short_pkt_fmt;
+			csum_partial = tx_stats->csum_partial;
+			mana_map_err = tx_stats->mana_map_err;
+		} while (u64_stats_fetch_retry(&tx_stats->syncp, start));
 
 		data[i++] = packets;
 		data[i++] = bytes;
 		data[i++] = xdp_xmit;
+		data[i++] = tso_packets;
+		data[i++] = tso_bytes;
+		data[i++] = tso_inner_packets;
+		data[i++] = tso_inner_bytes;
+		data[i++] = long_pkt_fmt;
+		data[i++] = short_pkt_fmt;
+		data[i++] = csum_partial;
+		data[i++] = mana_map_err;
 	}
 }
 
@@ -142,7 +245,9 @@ static u32 mana_get_rxfh_key_size(struct net_device *ndev)
 
 static u32 mana_rss_indir_size(struct net_device *ndev)
 {
-	return MANA_INDIRECT_TABLE_SIZE;
+	struct mana_port_context *apc = netdev_priv(ndev);
+
+	return apc->indir_table_sz;
 }
 
 static int mana_get_rxfh(struct net_device *ndev, u32 *indir, u8 *key,
@@ -155,7 +260,7 @@ static int mana_get_rxfh(struct net_device *ndev, u32 *indir, u8 *key,
 		*hfunc = ETH_RSS_HASH_TOP; /* Toeplitz */
 
 	if (indir) {
-		for (i = 0; i < MANA_INDIRECT_TABLE_SIZE; i++)
+		for (i = 0; i < apc->indir_table_sz; i++)
 			indir[i] = apc->indir_table[i];
 	}
 
@@ -170,8 +275,8 @@ static int mana_set_rxfh(struct net_device *ndev, const u32 *indir,
 {
 	struct mana_port_context *apc = netdev_priv(ndev);
 	bool update_hash = false, update_table = false;
-	u32 save_table[MANA_INDIRECT_TABLE_SIZE];
 	u8 save_key[MANA_HASH_KEY_SIZE];
+	u32 *save_table;
 	int i, err;
 
 	if (!apc->port_is_up)
@@ -180,13 +285,19 @@ static int mana_set_rxfh(struct net_device *ndev, const u32 *indir,
 	if (hfunc != ETH_RSS_HASH_NO_CHANGE && hfunc != ETH_RSS_HASH_TOP)
 		return -EOPNOTSUPP;
 
+	save_table = kcalloc(apc->indir_table_sz, sizeof(u32), GFP_KERNEL);
+	if (!save_table)
+		return -ENOMEM;
+
 	if (indir) {
-		for (i = 0; i < MANA_INDIRECT_TABLE_SIZE; i++)
-			if (indir[i] >= apc->num_queues)
-				return -EINVAL;
+		for (i = 0; i < apc->indir_table_sz; i++)
+			if (indir[i] >= apc->num_queues) {
+				err = -EINVAL;
+				goto cleanup;
+			}
 
 		update_table = true;
-		for (i = 0; i < MANA_INDIRECT_TABLE_SIZE; i++) {
+		for (i = 0; i < apc->indir_table_sz; i++) {
 			save_table[i] = apc->indir_table[i];
 			apc->indir_table[i] = indir[i];
 		}
@@ -202,7 +313,7 @@ static int mana_set_rxfh(struct net_device *ndev, const u32 *indir,
 
 	if (err) { /* recover to original values */
 		if (update_table) {
-			for (i = 0; i < MANA_INDIRECT_TABLE_SIZE; i++)
+			for (i = 0; i < apc->indir_table_sz; i++)
 				apc->indir_table[i] = save_table[i];
 		}
 
@@ -211,6 +322,9 @@ static int mana_set_rxfh(struct net_device *ndev, const u32 *indir,
 
 		mana_config_rss(apc, TRI_STATE_TRUE, update_hash, update_table);
 	}
+
+cleanup:
+	kfree(save_table);
 
 	return err;
 }

@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0
 VERSION = 6
 PATCHLEVEL = 1
-SUBLEVEL = 129
+SUBLEVEL = 133
 EXTRAVERSION =
 NAME = Curry Ramen
 
@@ -140,6 +140,18 @@ export KBUILD_CLIPPY
 # directory of external module to build. Setting M= takes precedence.
 ifeq ("$(origin M)", "command line")
   KBUILD_EXTMOD := $(M)
+endif
+
+# Old syntax make ... SUBDIRS=$PWD should be rejected to avoid mishaps
+# (see Debian bugs #982334, #987575)
+ifndef KBUILD_EXTMOD
+  ifdef SUBDIRS
+    $(warning =============== ERROR ==============)
+    $(warning 'SUBDIRS' was removed in Linux 5.3)
+    $(warning Use 'M=' or 'KBUILD_EXTMOD=' instead)
+    $(warning ====================================)
+    $(error .)
+  endif
 endif
 
 $(if $(word 2, $(KBUILD_EXTMOD)), \
@@ -402,36 +414,6 @@ include $(srctree)/scripts/subarch.include
 # Note: Some architectures assign CROSS_COMPILE in their arch/*/Makefile
 ARCH		?= $(SUBARCH)
 
-# Architecture as present in compile.h
-UTS_MACHINE 	:= $(ARCH)
-SRCARCH 	:= $(ARCH)
-
-# Additional ARCH settings for x86
-ifeq ($(ARCH),i386)
-        SRCARCH := x86
-endif
-ifeq ($(ARCH),x86_64)
-        SRCARCH := x86
-endif
-
-# Additional ARCH settings for sparc
-ifeq ($(ARCH),sparc32)
-       SRCARCH := sparc
-endif
-ifeq ($(ARCH),sparc64)
-       SRCARCH := sparc
-endif
-
-# Additional ARCH settings for parisc
-ifeq ($(ARCH),parisc64)
-       SRCARCH := parisc
-endif
-
-export cross_compiling :=
-ifneq ($(SRCARCH),$(SUBARCH))
-cross_compiling := 1
-endif
-
 KCONFIG_CONFIG	?= .config
 export KCONFIG_CONFIG
 
@@ -545,6 +527,35 @@ CFLAGS_KERNEL	=
 RUSTFLAGS_KERNEL =
 AFLAGS_KERNEL	=
 LDFLAGS_vmlinux =
+
+-include .kernelvariables
+
+# Architecture as present in compile.h
+UTS_MACHINE 	:= $(ARCH)
+SRCARCH 	:= $(ARCH)
+
+# Additional ARCH settings for x86
+ifeq ($(ARCH),i386)
+        SRCARCH := x86
+endif
+ifeq ($(ARCH),x86_64)
+        SRCARCH := x86
+endif
+
+# Additional ARCH settings for sparc
+ifeq ($(ARCH),sparc64)
+       SRCARCH := sparc
+endif
+
+# Additional ARCH settings for parisc
+ifeq ($(ARCH),parisc64)
+       SRCARCH := parisc
+endif
+
+# Additional ARCH settings for sh
+ifeq ($(ARCH),sh64)
+       SRCARCH := sh
+endif
 
 # Use USERINCLUDE when you must reference the UAPI directories only.
 USERINCLUDE    := \
@@ -1127,6 +1138,11 @@ endif
 KBUILD_USERCFLAGS  += $(filter -m32 -m64 --target=%, $(KBUILD_CFLAGS))
 KBUILD_USERLDFLAGS += $(filter -m32 -m64 --target=%, $(KBUILD_CFLAGS))
 
+# userspace programs are linked via the compiler, use the correct linker
+ifeq ($(CONFIG_CC_IS_CLANG)$(CONFIG_LD_IS_LLD),yy)
+KBUILD_USERLDFLAGS += $(call cc-option, --ld-path=$(LD))
+endif
+
 # make the checker run with the right architecture
 CHECKFLAGS += --arch=$(ARCH)
 
@@ -1277,7 +1293,8 @@ PHONY += prepare archprepare
 
 archprepare: outputmakefile archheaders archscripts scripts include/config/kernel.release \
 	asm-generic $(version_h) $(autoksyms_h) include/generated/utsrelease.h \
-	include/generated/compile.h include/generated/autoconf.h remove-stale-files
+	include/generated/compile.h include/generated/autoconf.h \
+	include/generated/package.h remove-stale-files
 
 prepare0: archprepare
 	$(Q)$(MAKE) $(build)=scripts/mod
@@ -1335,6 +1352,16 @@ define filechk_version.h
 	echo \#define LINUX_VERSION_SUBLEVEL $(SUBLEVEL)
 endef
 
+ifneq ($(DISTRIBUTION_OFFICIAL_BUILD),)
+define filechk_package.h
+	echo \#define LINUX_PACKAGE_ID \" $(DISTRIBUTOR) $(DISTRIBUTION_VERSION)\"
+endef
+else
+define filechk_package.h
+	echo \#define LINUX_PACKAGE_ID \"\"
+endef
+endif
+
 $(version_h): PATCHLEVEL := $(or $(PATCHLEVEL), 0)
 $(version_h): SUBLEVEL := $(or $(SUBLEVEL), 0)
 $(version_h): FORCE
@@ -1348,6 +1375,9 @@ filechk_compile.h = $(srctree)/scripts/mkcompile_h \
 
 include/generated/compile.h: FORCE
 	$(call filechk,compile.h)
+
+include/generated/package.h: $(srctree)/Makefile FORCE
+	$(call filechk,package.h)
 
 PHONY += headerdep
 headerdep:
@@ -1846,11 +1876,6 @@ rustfmt:
 rustfmtcheck: rustfmt_flags = --check
 rustfmtcheck: rustfmt
 
-# IDE support targets
-PHONY += rust-analyzer
-rust-analyzer:
-	$(Q)$(MAKE) $(build)=rust $@
-
 # Misc
 # ---------------------------------------------------------------------------
 
@@ -1889,7 +1914,7 @@ PHONY += prepare
 # now expand this into a simple variable to reduce the cost of shell evaluations
 prepare: CC_VERSION_TEXT := $(CC_VERSION_TEXT)
 prepare:
-	@if [ "$(CC_VERSION_TEXT)" != "$(CONFIG_CC_VERSION_TEXT)" ]; then \
+	@if [ -z "$(DEBIAN_KERNEL_NO_CC_VERSION_CHECK)" ] && [ "$(CC_VERSION_TEXT)" != "$(CONFIG_CC_VERSION_TEXT)" ]; then \
 		echo >&2 "warning: the compiler differs from the one used to build the kernel"; \
 		echo >&2 "  The kernel was built by: $(CONFIG_CC_VERSION_TEXT)"; \
 		echo >&2 "  You are using:           $(CC_VERSION_TEXT)"; \
@@ -1903,6 +1928,7 @@ help:
 	@echo  '  modules         - default target, build the module(s)'
 	@echo  '  modules_install - install the module'
 	@echo  '  clean           - remove generated files in module directory only'
+	@echo  '  rust-analyzer	  - generate rust-project.json rust-analyzer support file'
 	@echo  ''
 
 endif # KBUILD_EXTMOD
@@ -2038,6 +2064,11 @@ quiet_cmd_tags = GEN     $@
 
 tags TAGS cscope gtags: FORCE
 	$(call cmd,tags)
+
+# IDE support targets
+PHONY += rust-analyzer
+rust-analyzer:
+	$(Q)$(MAKE) $(build)=rust $@
 
 # Script to generate missing namespace dependencies
 # ---------------------------------------------------------------------------

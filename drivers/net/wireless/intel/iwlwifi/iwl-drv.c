@@ -183,8 +183,6 @@ static int iwl_request_firmware(struct iwl_drv *drv, bool first)
 	}
 
 	if (drv->fw_index < cfg->ucode_api_min) {
-		IWL_ERR(drv, "no suitable firmware found!\n");
-
 		if (cfg->ucode_api_min == cfg->ucode_api_max) {
 			IWL_ERR(drv, "%s%d is required\n", cfg->fw_name_pre,
 				cfg->ucode_api_max);
@@ -1141,7 +1139,7 @@ static int iwl_parse_tlv_firmware(struct iwl_drv *drv,
 
 			if (tlv_len != sizeof(*fseq_ver))
 				goto invalid_tlv_len;
-			IWL_INFO(drv, "TLV_FW_FSEQ_VERSION: %s\n",
+			IWL_INFO(drv, "TLV_FW_FSEQ_VERSION: %.32s\n",
 				 fseq_ver->version);
 			}
 			break;

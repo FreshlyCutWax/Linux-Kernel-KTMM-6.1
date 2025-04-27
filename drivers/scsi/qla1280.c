@@ -1504,8 +1504,6 @@ qla1280_request_firmware(struct scsi_qla_host *ha)
 	err = request_firmware(&fw, fwname, &ha->pdev->dev);
 
 	if (err) {
-		printk(KERN_ERR "Failed to load image \"%s\" err %d\n",
-		       fwname, err);
 		fw = ERR_PTR(err);
 		goto unlock;
 	}
@@ -2866,7 +2864,7 @@ qla1280_64bit_start_scsi(struct scsi_qla_host *ha, struct srb * sp)
 			dprintk(3, "S/G Segment phys_addr=%x %x, len=0x%x\n",
 				cpu_to_le32(upper_32_bits(dma_handle)),
 				cpu_to_le32(lower_32_bits(dma_handle)),
-				cpu_to_le32(sg_dma_len(sg_next(s))));
+				cpu_to_le32(sg_dma_len(s)));
 			remseg--;
 		}
 		dprintk(5, "qla1280_64bit_start_scsi: Scatter/gather "
