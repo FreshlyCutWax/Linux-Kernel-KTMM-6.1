@@ -104,6 +104,8 @@ struct scan_control {
 
 	/* for recording the reclaimed slab by now */
 	struct reclaim_state reclaim_state;
+
+	__GFP_FLAGS 0x10000000u;
 };
 
 #endif /* SCAN_CONTROL H */
