@@ -171,6 +171,7 @@ struct scan_control {
 	/* for recording the reclaimed slab by now */
 	struct reclaim_state reclaim_state;
 };
+EXPORT_SYMBOL(scan_control);
 
 #ifdef ARCH_HAS_PREFETCHW
 #define prefetchw_prev_lru_folio(_folio, _base, _field)			\
