@@ -1194,8 +1194,10 @@ const char * const vmstat_text[] = {
 	/* enum node_stat_item counters */
 	"nr_inactive_anon",
 	"nr_active_anon",
+	"nr_promote_anon", /* KTMM MODIFICATION */
 	"nr_inactive_file",
 	"nr_active_file",
+	"nr_promote_file", /* KTMM MODIFICATION */
 	"nr_unevictable",
 	"nr_slab_reclaimable",
 	"nr_slab_unreclaimable",
@@ -1242,6 +1244,8 @@ const char * const vmstat_text[] = {
 	"pgpromote_success",
 	"pgpromote_candidate",
 #endif
+	"nr_demoted", /* KTMM MODIFICATION */
+	"nr_promoted", /* KTMM MODIFICATION */
 
 	/* enum writeback_stat_item counters */
 	"nr_dirty_threshold",

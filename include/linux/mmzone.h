@@ -141,8 +141,10 @@ enum zone_stat_item {
 	NR_ZONE_LRU_BASE, /* Used only for compaction and reclaim retry */
 	NR_ZONE_INACTIVE_ANON = NR_ZONE_LRU_BASE,
 	NR_ZONE_ACTIVE_ANON,
+	NR_ZONE_PROMOTE_ANON, /* KTMM MODIFICATION */
 	NR_ZONE_INACTIVE_FILE,
 	NR_ZONE_ACTIVE_FILE,
+	NR_ZONE_PROMOTE_FILE, /* KTMM MODIFICATION */
 	NR_ZONE_UNEVICTABLE,
 	NR_ZONE_WRITE_PENDING,	/* Count of dirty, writeback and unstable pages */
 	NR_MLOCK,		/* mlock()ed pages found and moved off LRU */
@@ -158,8 +160,10 @@ enum node_stat_item {
 	NR_LRU_BASE,
 	NR_INACTIVE_ANON = NR_LRU_BASE, /* must match order of LRU_[IN]ACTIVE */
 	NR_ACTIVE_ANON,		/*  "     "     "   "       "         */
+	NR_PROMOTE_ANON, /* KTMM MODIFICATION */
 	NR_INACTIVE_FILE,	/*  "     "     "   "       "         */
 	NR_ACTIVE_FILE,		/*  "     "     "   "       "         */
+	NR_PROMOTE_FILE, /* KTMM MODIFICATION */
 	NR_UNEVICTABLE,		/*  "     "     "   "       "         */
 	NR_SLAB_RECLAIMABLE_B,
 	NR_SLAB_UNRECLAIMABLE_B,
@@ -210,6 +214,8 @@ enum node_stat_item {
 	PGPROMOTE_SUCCESS,	/* promote successfully */
 	PGPROMOTE_CANDIDATE,	/* candidate pages to promote */
 #endif
+	NR_DEMOTED, /* KTMM MODIFICATION */
+	NR_PROMOTED, /* KTMM MODIFICATION */
 	NR_VM_NODE_STAT_ITEMS
 };
 
@@ -259,15 +265,23 @@ static __always_inline bool vmstat_item_in_bytes(int idx)
  * This has to be kept in sync with the statistics in zone_stat_item
  * above and the descriptions in vmstat_text in mm/vmstat.c
  */
+/* KTMM MODIFICATION
 #define LRU_BASE 0
 #define LRU_ACTIVE 1
 #define LRU_FILE 2
+*/
+#define LRU_BASE 0
+#define LRU_ACTIVE 1
+#define LRU_PROMOTE 2
+#define LRU_FILE 3
 
 enum lru_list {
 	LRU_INACTIVE_ANON = LRU_BASE,
 	LRU_ACTIVE_ANON = LRU_BASE + LRU_ACTIVE,
+	LRU_PROMOTE_ANON = LRU_BASE + LRU_PROMOTE, /* KTMM */
 	LRU_INACTIVE_FILE = LRU_BASE + LRU_FILE,
 	LRU_ACTIVE_FILE = LRU_BASE + LRU_FILE + LRU_ACTIVE,
+	LRU_PROMOTE_FILE = LRU_BASE + LRU_FILE + LRU_PROMOTE, /* KTMM */
 	LRU_UNEVICTABLE,
 	NR_LRU_LISTS
 };
@@ -282,16 +296,26 @@ enum vmscan_throttle_state {
 
 #define for_each_lru(lru) for (lru = 0; lru < NR_LRU_LISTS; lru++)
 
-#define for_each_evictable_lru(lru) for (lru = 0; lru <= LRU_ACTIVE_FILE; lru++)
+/* KTMM MODIFICATION */
+//#define for_each_evictable_lru(lru) for (lru = 0; lru <= LRU_ACTIVE_FILE; lru++)
+#define for_each_evictable_lru(lru) for (lru = 0; lru <= LRU_PROMOTE_FILE; lru++)
 
+/* KTMM MODIFICATION */
 static inline bool is_file_lru(enum lru_list lru)
 {
-	return (lru == LRU_INACTIVE_FILE || lru == LRU_ACTIVE_FILE);
+	//return (lru == LRU_INACTIVE_FILE || lru == LRU_ACTIVE_FILE);
+	return (lru == LRU_INACTIVE_FILE || lru == LRU_ACTIVE_FILE || lru == LRU_PROMOTE_FILE);
 }
 
 static inline bool is_active_lru(enum lru_list lru)
 {
 	return (lru == LRU_ACTIVE_ANON || lru == LRU_ACTIVE_FILE);
+}
+
+/* KTMM MODIFICATION */
+static inline bool is_promote_lru(enum lru_list lru)
+{
+	return (lru == LRU_PROMOTE_ANON || lru == LRU_PROMOTE_FILE);
 }
 
 #define WORKINGSET_ANON 0
@@ -539,6 +563,8 @@ struct lruvec {
 #define ISOLATE_ASYNC_MIGRATE	((__force isolate_mode_t)0x4)
 /* Isolate unevictable pages */
 #define ISOLATE_UNEVICTABLE	((__force isolate_mode_t)0x8)
+/* KTMM MODIFICATION */
+#define ISOLATE_PROMOTE		((__force isolate_mode_t)0x16)
 
 /* LRU Isolation modes. */
 typedef unsigned __bitwise isolate_mode_t;
