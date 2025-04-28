@@ -1170,8 +1170,10 @@ const char * const vmstat_text[] = {
 	"nr_free_pages",
 	"nr_zone_inactive_anon",
 	"nr_zone_active_anon",
+	"nr_zone_promote_anon", /* KTMM MODIFICATION */
 	"nr_zone_inactive_file",
 	"nr_zone_active_file",
+	"nr_zone_promote_file", /* KTMM MODIFICATION */
 	"nr_zone_unevictable",
 	"nr_zone_write_pending",
 	"nr_mlock",
@@ -1232,6 +1234,8 @@ const char * const vmstat_text[] = {
 	"nr_foll_pin_acquired",
 	"nr_foll_pin_released",
 	"nr_kernel_stack",
+	"nr_demoted", /* KTMM MODIFICATION */
+	"nr_promoted", /* KTMM MODIFICATION */
 #if IS_ENABLED(CONFIG_SHADOW_CALL_STACK)
 	"nr_shadow_call_stack",
 #endif
@@ -1244,8 +1248,6 @@ const char * const vmstat_text[] = {
 	"pgpromote_success",
 	"pgpromote_candidate",
 #endif
-	"nr_demoted", /* KTMM MODIFICATION */
-	"nr_promoted", /* KTMM MODIFICATION */
 
 	/* enum writeback_stat_item counters */
 	"nr_dirty_threshold",
