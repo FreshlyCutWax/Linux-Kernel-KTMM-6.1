@@ -249,7 +249,7 @@ static inline struct folio *lru_to_folio(struct list_head *head)
 }
 
 /* KTMM MODIFICATION */
-static inline struct folio *lru_to_folio_next(struct list_head *folio)
+static inline struct folio *lru_to_folio_next(struct list_head *head)
 {
 	return list_entry((head)->next, struct folio, lru);
 }
