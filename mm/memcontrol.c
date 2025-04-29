@@ -1380,12 +1380,14 @@ void mem_cgroup_update_lru_size(struct lruvec *lruvec, enum lru_list lru,
 		*lru_size += nr_pages;
 
 	size = *lru_size;
+	/* KTMM MODIFICATION 
 	if (WARN_ONCE(size < 0,
 		"%s(%p, %d, %d): lru_size %ld\n",
 		__func__, lruvec, lru, nr_pages, size)) {
 		VM_BUG_ON(1);
 		*lru_size = 0;
 	}
+	*/
 
 	if (nr_pages > 0)
 		*lru_size += nr_pages;
@@ -1471,6 +1473,7 @@ struct memory_stat {
 	unsigned int idx;
 };
 
+/* KTMM MODIFICATION */
 static const struct memory_stat memory_stats[] = {
 	{ "anon",			NR_ANON_MAPPED			},
 	{ "file",			NR_FILE_PAGES			},
@@ -1499,8 +1502,10 @@ static const struct memory_stat memory_stats[] = {
 #endif
 	{ "inactive_anon",		NR_INACTIVE_ANON		},
 	{ "active_anon",		NR_ACTIVE_ANON			},
+	{ "promote_anon",		NR_PROMOTE_ANON			},
 	{ "inactive_file",		NR_INACTIVE_FILE		},
 	{ "active_file",		NR_ACTIVE_FILE			},
+	{ "promote_file",		NR_PROMOTE_FILE			},
 	{ "unevictable",		NR_UNEVICTABLE			},
 	{ "slab_reclaimable",		NR_SLAB_RECLAIMABLE_B		},
 	{ "slab_unreclaimable",		NR_SLAB_UNRECLAIMABLE_B		},
