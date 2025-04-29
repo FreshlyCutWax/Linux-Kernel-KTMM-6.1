@@ -62,6 +62,9 @@ typedef unsigned int __bitwise gfp_t;
 #else
 #define ___GFP_NOLOCKDEP	0
 #endif
+
+/* KTMM MODIFICATION */
+#define ___GFP_PMEM		0x10000000u
 /* If the above are modified, __GFP_BITS_SHIFT may need updating */
 
 /*
@@ -257,8 +260,12 @@ typedef unsigned int __bitwise gfp_t;
 /* Disable lockdep for GFP context tracking */
 #define __GFP_NOLOCKDEP ((__force gfp_t)___GFP_NOLOCKDEP)
 
+/* KTMM MODIFICATION */
+#define __GFP_PMEM ((__force gfp_t)___GFP_PMEM)
+
 /* Room for N __GFP_FOO bits */
-#define __GFP_BITS_SHIFT (27 + IS_ENABLED(CONFIG_LOCKDEP))
+//#define __GFP_BITS_SHIFT (27 + IS_ENABLED(CONFIG_LOCKDEP))
+#define __GFP_BITS_SHIFT (29)
 #define __GFP_BITS_MASK ((__force gfp_t)((1 << __GFP_BITS_SHIFT) - 1))
 
 /**
