@@ -1173,6 +1173,8 @@ typedef struct pglist_data {
 #ifdef CONFIG_MEMORY_HOTPLUG
 	struct mutex kswapd_lock;
 #endif
+	int pm_node;
+
 	struct task_struct *kswapd;	/* Protected by kswapd_lock */
 	int kswapd_order;
 	enum zone_type kswapd_highest_zoneidx;

@@ -137,6 +137,18 @@ struct scan_control {
 };
 */
 
+int pmem_node_id = -1;
+
+void set_pmem_node_id(int nid)
+{
+	pmem_node_id = nid;
+}
+
+void set_pmem_node(int nid)
+{
+	NODE_DATA(nid)->pm_node = 1;
+}
+
 #ifdef ARCH_HAS_PREFETCHW
 #define prefetchw_prev_lru_folio(_folio, _base, _field)			\
 	do {								\

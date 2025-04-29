@@ -91,6 +91,10 @@ extern const int mmap_rnd_compat_bits_min;
 extern const int mmap_rnd_compat_bits_max;
 extern int mmap_rnd_compat_bits __read_mostly;
 #endif
+/* KTMM MODIFICATION */
+extern int pmem_node_id;
+void set_pmem_node_id(int nid);
+void set_pmem_node(int nid);
 
 #ifndef PHYSMEM_END
 # define PHYSMEM_END	((1ULL << MAX_PHYSMEM_BITS) - 1)
