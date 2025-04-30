@@ -137,6 +137,7 @@ struct scan_control {
 };
 */
 
+/* KTMM MODIFICATION */
 int pmem_node_id = -1;
 
 void set_pmem_node_id(int nid)
@@ -148,6 +149,8 @@ void set_pmem_node(int nid)
 {
 	NODE_DATA(nid)->pm_node = 1;
 }
+EXPORT_SYMBOL(pmem_node_id);
+EXPORT_SYMBOL(set_pmem_node);
 
 #ifdef ARCH_HAS_PREFETCHW
 #define prefetchw_prev_lru_folio(_folio, _base, _field)			\
