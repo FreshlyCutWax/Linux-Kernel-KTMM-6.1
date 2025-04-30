@@ -137,8 +137,12 @@ struct scan_control {
 };
 */
 
-/* KTMM MODIFICATION */
+/* 
+ * KTMM MODIFICATION 
+ * Prototypes in mm.h
+ */
 int pmem_node_id = -1;
+bool ktmm_scan = false;
 
 void set_pmem_node_id(int nid)
 {
@@ -149,8 +153,16 @@ void set_pmem_node(int nid)
 {
 	NODE_DATA(nid)->pm_node = 1;
 }
+
+void set_ktmm_scan(void)
+{
+	if (ktmm_scan == false) ktmm_scan = true;
+	else if (ktmm_scan == true) ktmm_scan == false;
+}
 EXPORT_SYMBOL(pmem_node_id);
 EXPORT_SYMBOL(set_pmem_node);
+EXPORT_SYMBOL(set_ktmm_scan);
+
 
 #ifdef ARCH_HAS_PREFETCHW
 #define prefetchw_prev_lru_folio(_folio, _base, _field)			\
