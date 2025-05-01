@@ -1802,7 +1802,11 @@ retry:
 		 * Before reclaiming the folio, try to relocate
 		 * its contents to another node.
 		 */
-		if (do_demote_pass &&
+		if (ktmm_scan && sc->only_promote) {
+			/* KTMM MODIFICATION */
+			goto keep_locked;
+		}
+		else if (do_demote_pass &&
 		    (thp_migration_supported() || !folio_test_large(folio))) {
 			list_add(&folio->lru, &demote_folios);
 			folio_unlock(folio);
@@ -2078,14 +2082,17 @@ keep:
 	}
 	/* 'folio_list' is always empty here */
 
-	/* Migrate folios selected for demotion */
-	nr_reclaimed += demote_folio_list(&demote_folios, pgdat);
-	/* Folios that could not be demoted are still in @demote_folios */
-	if (!list_empty(&demote_folios)) {
-		/* Folios which weren't demoted go back on @folio_list for retry: */
-		list_splice_init(&demote_folios, folio_list);
-		do_demote_pass = false;
-		goto retry;
+	/* KTMM MODIFICATION */
+	if (!sc->only_promote) {
+		/* Migrate folios selected for demotion */
+		nr_reclaimed += demote_folio_list(&demote_folios, pgdat);
+		/* Folios that could not be demoted are still in @demote_folios */
+		if (!list_empty(&demote_folios)) {
+			/* Folios which weren't demoted go back on @folio_list for retry: */
+			list_splice_init(&demote_folios, folio_list);
+			do_demote_pass = false;
+			goto retry;
+		}
 	}
 
 	pgactivate = stat->nr_activate[0] + stat->nr_activate[1];
@@ -2209,7 +2216,12 @@ static unsigned long isolate_lru_folios(unsigned long nr_to_scan,
 		struct list_head *move_to = src;
 		struct folio *folio;
 
-		folio = lru_to_folio(src);
+		/* KTMM MODIFICATION */
+		if (ktmm_scan & sc->only_promote)
+			folio = lru_to_folio_next(src);
+		else
+			folio = lru_to_folio(src);
+
 		prefetchw_prev_lru_folio(folio, src, flags);
 
 		nr_pages = folio_nr_pages(folio);
@@ -2248,6 +2260,9 @@ static unsigned long isolate_lru_folios(unsigned long nr_to_scan,
 			folio_put(folio);
 			goto move;
 		}
+
+		/* KTMM MAYBE MODIFY?? */
+		//if (!folio_test_referenced(folio) &&
 
 		nr_taken += nr_pages;
 		nr_zone_taken[folio_zonenum(folio)] += nr_pages;
@@ -2378,6 +2393,7 @@ static int too_many_isolated(struct pglist_data *pgdat, int file,
 static unsigned int move_folios_to_lru(struct lruvec *lruvec,
 		struct list_head *list)
 {
+	enum lru_list lru;
 	int nr_pages, nr_moved = 0;
 	LIST_HEAD(folios_to_free);
 
@@ -2405,6 +2421,15 @@ static unsigned int move_folios_to_lru(struct lruvec *lruvec,
 		 *                                        list_add(&folio->lru,)
 		 */
 		folio_set_lru(folio);
+		
+		/* KTMM MODIFICATION */
+		if (ktmm_scan) {
+			lru = folio_lru_list(folio);
+			if (is_promote_lru(lru))
+				folio_test_clear_referenced(folio);
+			if(folio_test_promote(folio))
+				__folio_clear_promote(folio);
+		}
 
 		if (unlikely(folio_put_testzero(folio))) {
 			__folio_clear_lru_flags(folio);
@@ -2776,10 +2801,22 @@ static bool inactive_is_low(struct lruvec *lruvec, enum lru_list inactive_lru)
 	unsigned long inactive_ratio;
 	unsigned long gb;
 
+	/* KTMM MODIFICATION */
+	enum lru_list promote_lru = inactive_lru + LRU_PROMOTE;
+	unsigned long promote;
+
 	inactive = lruvec_page_state(lruvec, NR_LRU_BASE + inactive_lru);
 	active = lruvec_page_state(lruvec, NR_LRU_BASE + active_lru);
 
-	gb = (inactive + active) >> (30 - PAGE_SHIFT);
+	/* KTMM MODIFICATION */
+	if (ktmm_scan)
+		promote = lruvec_page_state(lruvec, NR_LRU_BASE + promote_lru);
+
+	if (ktmm_scan)
+		gb = (inactive + active + promote) >> (30 - PAGE_SHIFT);
+	else
+		gb = (inactive + active) >> (30 - PAGE_SHIFT);
+
 	if (gb)
 		inactive_ratio = int_sqrt(10 * gb);
 	else

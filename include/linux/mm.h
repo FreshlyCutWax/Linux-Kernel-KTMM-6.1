@@ -93,8 +93,10 @@ extern int mmap_rnd_compat_bits __read_mostly;
 #endif
 /* KTMM MODIFICATION */
 extern int pmem_node_id;
+extern bool ktmm_scan;
 void set_pmem_node_id(int nid);
 void set_pmem_node(int nid);
+void set_ktmm_scan(void);
 
 #ifndef PHYSMEM_END
 # define PHYSMEM_END	((1ULL << MAX_PHYSMEM_BITS) - 1)
