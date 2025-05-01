@@ -157,7 +157,7 @@ void set_pmem_node(int nid)
 void set_ktmm_scan(void)
 {
 	if (ktmm_scan == false) ktmm_scan = true;
-	else if (ktmm_scan == true) ktmm_scan == false;
+	else if (ktmm_scan == true) ktmm_scan = false;
 }
 EXPORT_SYMBOL(pmem_node_id);
 EXPORT_SYMBOL(set_pmem_node);
