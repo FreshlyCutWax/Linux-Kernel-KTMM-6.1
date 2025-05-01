@@ -15,6 +15,7 @@
  */
 
 #include <linux/mm.h>
+#include <linux/mmzone.h>	/* KTMM MODIFICATION */
 #include <linux/sched.h>
 #include <linux/kernel_stat.h>
 #include <linux/swap.h>
@@ -335,6 +336,9 @@ void lru_note_cost_folio(struct folio *folio)
 
 static void folio_activate_fn(struct lruvec *lruvec, struct folio *folio)
 {
+	int nid = folio_nid(folio);
+	struct pglist_data *pgdat = NODE_DATA(nid);
+
 	if (!folio_test_active(folio) && !folio_test_unevictable(folio)) {
 		long nr_pages = folio_nr_pages(folio);
 
@@ -346,6 +350,13 @@ static void folio_activate_fn(struct lruvec *lruvec, struct folio *folio)
 		__count_vm_events(PGACTIVATE, nr_pages);
 		__count_memcg_events(lruvec_memcg(lruvec), PGACTIVATE,
 				     nr_pages);
+	} /* KTMM MODIFICATION */
+	else if (folio_test_active(folio) && !folio_test_unevictable(folio) && pgdat->pm_node != 0) {
+		lruvec_del_folio(lruvec, folio);
+		folio_clear_active(folio);
+		folio_set_promote(folio);
+		lruvec_add_folio(lruvec, folio);
+		//trace_mm_lru_activate(folio);
 	}
 }
 
@@ -393,7 +404,13 @@ void folio_activate(struct folio *folio)
 static void __lru_cache_activate_folio(struct folio *folio)
 {
 	struct folio_batch *fbatch;
+	struct pglist_data *pgdat;
+	int nid;
 	int i;
+
+	/* KTMM MODIFICATION */
+	nid = folio_nid(folio);
+	pgdat = NODE_DATA(nid);
 
 	local_lock(&cpu_fbatches.lock);
 	fbatch = this_cpu_ptr(&cpu_fbatches.lru_add);
@@ -412,7 +429,11 @@ static void __lru_cache_activate_folio(struct folio *folio)
 		struct folio *batch_folio = fbatch->folios[i];
 
 		if (batch_folio == folio) {
-			folio_set_active(folio);
+			/* KTMM MODIFICATION */
+			if (!folio_test_active(folio))
+				folio_set_active(folio);
+			else if (pgdat->pm_node != 0)
+				folio_set_promote(folio);
 			break;
 		}
 	}
