@@ -1878,6 +1878,7 @@ out:
 
 	return rc_gather;
 }
+EXPORT_SYMBOL(migrate_pages);
 
 struct page *alloc_migration_target(struct page *page, unsigned long private)
 {
