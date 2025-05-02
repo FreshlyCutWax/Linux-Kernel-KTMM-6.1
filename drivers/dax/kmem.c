@@ -136,6 +136,9 @@ static int dev_dax_kmem_probe(struct dev_dax *dev_dax)
 		 */
 		res->flags = IORESOURCE_SYSTEM_RAM;
 
+		/* KTMM MODIFICATION */
+		set_pmem_node_id(numa_node);
+
 		/*
 		 * Ensure that future kexec'd kernels will not treat
 		 * this as RAM automatically.
@@ -148,6 +151,7 @@ static int dev_dax_kmem_probe(struct dev_dax *dev_dax)
 					i, range.start, range.end);
 			remove_resource(res);
 			kfree(res);
+			set_pmem_node_id(-1);	/* KTMM MODIFICATION */
 			data->res[i] = NULL;
 			if (mapped)
 				continue;
@@ -155,6 +159,9 @@ static int dev_dax_kmem_probe(struct dev_dax *dev_dax)
 		}
 		mapped++;
 	}
+
+	/* KTMM MODIFICATION */
+	set_pmem_node(numa_node);
 
 	dev_set_drvdata(dev, data);
 
