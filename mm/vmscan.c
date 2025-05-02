@@ -160,6 +160,7 @@ void set_ktmm_scan(void)
 	else if (ktmm_scan == true) ktmm_scan = false;
 }
 EXPORT_SYMBOL(pmem_node_id);
+EXPORT_SYMBOL(set_pmem_node_id);
 EXPORT_SYMBOL(set_pmem_node);
 EXPORT_SYMBOL(set_ktmm_scan);
 
