@@ -1803,7 +1803,7 @@ retry:
 		 * Before reclaiming the folio, try to relocate
 		 * its contents to another node.
 		 */
-		if (ktmm_scan && sc->only_promote) {
+		if (sc->only_promote) {
 			/* KTMM MODIFICATION */
 			goto keep_locked;
 		}
@@ -2218,7 +2218,7 @@ static unsigned long isolate_lru_folios(unsigned long nr_to_scan,
 		struct folio *folio;
 
 		/* KTMM MODIFICATION */
-		if (ktmm_scan & sc->only_promote)
+		if (sc->only_promote)
 			folio = lru_to_folio_next(src);
 		else
 			folio = lru_to_folio(src);
@@ -2424,13 +2424,13 @@ static unsigned int move_folios_to_lru(struct lruvec *lruvec,
 		folio_set_lru(folio);
 		
 		/* KTMM MODIFICATION */
-		if (ktmm_scan) {
-			lru = folio_lru_list(folio);
-			if (is_promote_lru(lru))
-				folio_test_clear_referenced(folio);
-			if(folio_test_promote(folio))
-				__folio_clear_promote(folio);
-		}
+		//if (ktmm_scan) {
+		lru = folio_lru_list(folio);
+		if (is_promote_lru(lru))
+			folio_test_clear_referenced(folio);
+		if(folio_test_promote(folio))
+			__folio_clear_promote(folio);
+		//}
 
 		if (unlikely(folio_put_testzero(folio))) {
 			__folio_clear_lru_flags(folio);
